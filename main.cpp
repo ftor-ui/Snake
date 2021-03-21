@@ -135,20 +135,20 @@ void logic()
 	// Control vector player
 	switch(state)
 	{
-    case STOP:
-        break;
-    case RIGHT:
-        x+=SIZE;
-        break;
-    case LEFT:
-        x-=SIZE;
-        break;
-    case UP:
-        y-=SIZE;
-        break;
-    case DOWN:
-        y+=SIZE;
-        break;
+	case STOP:
+		break;
+	case RIGHT:
+		x+=SIZE;
+		break;
+	case LEFT:
+		x-=SIZE;
+		break;
+	case UP:
+		y-=SIZE;
+		break;
+	case DOWN:
+		y+=SIZE;
+		break;
 	}
 
 	// Check the GameOver
