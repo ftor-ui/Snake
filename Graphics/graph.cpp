@@ -35,13 +35,15 @@ void printSquare(Window &window, int x, int y, int const SIZE, char const *color
 	square.setPoint(2, sf::Vector2f(x+SIZE, y+SIZE));
 	square.setPoint(3, sf::Vector2f(x, y+SIZE));
 
-	if (!strcmp(color, "black"))
-		square.setFillColor(sf::Color(0, 0, 0));
-	else if (!strcmp(color, "white"))
-		square.setFillColor(sf::Color(255, 255, 255));
-	else if (!strcmp(color, "red"))
-		square.setFillColor(sf::Color(200, 0, 0));
-	else if (!strcmp(color, "green"))
-		square.setFillColor(sf::Color(0, 220, 0));
+	if (!strcmp(color, "border"))
+		square.setFillColor(sf::Color(49, 29, 63));
+	else if (!strcmp(color, "empty"))
+		square.setFillColor(sf::Color(136, 48, 78));
+	else if (!strcmp(color, "head"))
+		square.setFillColor(sf::Color(226, 62, 87));
+	else if (!strcmp(color, "tail"))
+		square.setFillColor(sf::Color(82, 37, 70));
+    else if (!strcmp(color, "food"))
+        square.setFillColor(sf::Color(44, 123, 74));
     window.renderWindow.draw(square);
 }
