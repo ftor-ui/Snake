@@ -10,13 +10,13 @@ int const HEIGHT = 600;
 int const SIZE = 20;
 
 // Game params
-sf::Time speed = sf::milliseconds(60);
-bool GameOver = false;
+sf::Time speed = sf::milliseconds(90);
+bool GameOver;
 
 // Param of snake
-int x = ((WIDTH / 2) / SIZE) * SIZE;
-int y = ((HEIGHT / 2) / SIZE) * SIZE;
-int countTail = 0;
+int x;
+int y;
+int countTail;
 int prevX[(WIDTH-2*SIZE)*(HEIGHT-2*SIZE) - SIZE];
 int prevY[(WIDTH-2*SIZE)*(HEIGHT-2*SIZE) - SIZE];
 enum states {
@@ -28,30 +28,44 @@ enum states {
 } state;
 
 // Param of food
-int foodX = SIZE + rand()%((WIDTH-2*SIZE)/SIZE) * SIZE;
-int foodY = SIZE + rand()%((HEIGHT-2*SIZE)/SIZE) * SIZE;
+int foodX;
+int foodY;
 
-
+void init();
 void render(Window &);
 void controller();
 void logic();
 
 int main()
 {
-    srand(time(NULL));
+    init();
 	Window window(WIDTH, HEIGHT, "Snake");
 	while (window.isOpen())
 	{
 	    render(window);
+	    controller();
 		if (!GameOver)
-        {
-            controller();
             logic();
-        }
-        sf::sleep(speed);
 		window.render();
+		sf::sleep(speed);
 	}
 	return 0;
+}
+
+void init()
+{
+    srand(time(NULL));
+    GameOver = false;
+
+    // Param of snake
+    x = ((WIDTH / 2) / SIZE) * SIZE;
+    y = ((HEIGHT / 2) / SIZE) * SIZE;
+    countTail = 0;
+    state = STOP;
+
+    // Param of food
+    foodX = SIZE + rand()%((WIDTH-2*SIZE)/SIZE) * SIZE;
+    foodY = SIZE + rand()%((HEIGHT-2*SIZE)/SIZE) * SIZE;
 }
 
 void render(Window &window)
@@ -61,24 +75,24 @@ void render(Window &window)
 		{
 			for (int idx = 0; idx < WIDTH; idx+=SIZE)
 			{
-				if ((idx == 0 || idx == WIDTH - SIZE) ||
-				    (idy == 0 || idy == HEIGHT - SIZE))
-					printSquare(window, idx, idy, SIZE, "black");
+				if ((idx == 0 || idx >= (WIDTH - SIZE) / SIZE * SIZE) ||
+				    (idy == 0 || idy >= (HEIGHT - SIZE) / SIZE * SIZE))
+					printSquare(window, idx, idy, SIZE, "border");
 				else if (idx == x && idy == y)
-					printSquare(window, idx, idy, SIZE, "red");
+					printSquare(window, idx, idy, SIZE, "head");
 				else if (idx == foodX && idy == foodY)
-					printSquare(window, idx, idy, SIZE, "red");
+					printSquare(window, idx, idy, SIZE, "food");
 				else
 				{
 					bool isTail = false;
 					for (int idt = 0; idt < countTail; idt++)
 						if (prevX[idt] == idx && prevY[idt] == idy)
 						{
-							printSquare(window, idx, idy, SIZE, "green");
+							printSquare(window, idx, idy, SIZE, "tail");
 							isTail = true;
 						}
 					if (isTail == false)
-						printSquare(window, idx, idy, SIZE, "white");
+						printSquare(window, idx, idy, SIZE, "empty");
 				}
 			}
 		}
@@ -107,6 +121,8 @@ void controller()
         if (state != LEFT)
             state = RIGHT;
     }
+    else if (sf::Keyboard::isKeyPressed(sf::Keyboard::R))
+        init();
 }
 
 void logic()
@@ -135,26 +151,33 @@ void logic()
 	// Control vector player
 	switch(state)
 	{
-	case STOP:
-		break;
-	case RIGHT:
-		x+=SIZE;
-		break;
-	case LEFT:
-		x-=SIZE;
-		break;
-	case UP:
-		y-=SIZE;
-		break;
-	case DOWN:
-		y+=SIZE;
-		break;
+    case STOP:
+        break;
+    case RIGHT:
+        x+=SIZE;
+        break;
+    case LEFT:
+        x-=SIZE;
+        break;
+    case UP:
+        y-=SIZE;
+        break;
+    case DOWN:
+        y+=SIZE;
+        break;
 	}
 
+	// Control position of snake
+	if (x == 0)
+        x = (WIDTH - 2*SIZE) / SIZE * SIZE;
+    else if (x >= (WIDTH - SIZE) / SIZE * SIZE)
+        x = SIZE;
+    if (y == 0)
+        y = (HEIGHT - 2*SIZE) / SIZE * SIZE;
+    else if (y >= (HEIGHT - SIZE) / SIZE * SIZE)
+        y = SIZE;
+
 	// Check the GameOver
-	if (x == 0 || x == WIDTH - SIZE || \
-		y == 0 || y == HEIGHT - SIZE)
-		GameOver = true;
 	for (int idt = 0; idt < countTail; idt++)
 		if (prevX[idt] == x && prevY[idt] == y)
 		{
