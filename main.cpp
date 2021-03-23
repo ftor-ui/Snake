@@ -1,17 +1,27 @@
 #include "Graphics/graph.h"
+#include <cstring>
+#include <cstdio>
 #include <cstdlib>
 #include <ctime>
 
-// Resolution of window
-int const WIDTH = 800;
-int const HEIGHT = 600;
+// Resolution of Window
+int const WWIDTH = 800;
+int const WHEIGHT = 600;
+
+// Resolution of game-field
+int const WIDTH = WWIDTH - WWIDTH / 3 + WWIDTH / 10;
+int const HEIGHT = WHEIGHT;
 
 // Size of square
-int const SIZE = 20;
+int const SIZE = HEIGHT / 30;
 
 // Game params
 sf::Time speed = sf::milliseconds(90);
 bool GameOver;
+int score;
+char bScore[128];
+int bestScore;
+char bBestScore[128];
 
 // Param of snake
 int x;
@@ -32,18 +42,22 @@ int foodX;
 int foodY;
 
 void init();
+void menu(Window &);
+void bestScoreUpdate();
 void render(Window &);
-void controller();
+void controller(Window &);
 void logic();
 
 int main()
 {
     init();
-	Window window(WIDTH, HEIGHT, "Snake");
+	Window window(WWIDTH, WHEIGHT, "Snake");
+	window.setFont("C:\\Windows\\Fonts\\Arial.ttf");
+	menu(window);
 	while (window.isOpen())
 	{
 	    render(window);
-	    controller();
+	    controller(window);
 		if (!GameOver)
             logic();
 		window.render();
@@ -56,6 +70,14 @@ void init()
 {
     srand(time(NULL));
     GameOver = false;
+    score = 0;
+    sprintf(bScore, "Score: %d", 0);
+    FILE *data = fopen("data.dat", "a");
+    fclose(data);
+    data = fopen("data.dat", "r");
+    fscanf(data, "%d", &bestScore);
+    fclose(data);
+    snprintf(bBestScore, sizeof(bBestScore), "Best: %d", bestScore);
 
     // Param of snake
     x = ((WIDTH / 2) / SIZE) * SIZE;
@@ -68,37 +90,52 @@ void init()
     foodY = SIZE + rand()%((HEIGHT-2*SIZE)/SIZE) * SIZE;
 }
 
-void render(Window &window)
+void menu(Window &window)
 {
-    window.renderWindow.clear();
-	for (int idy = 0; idy < HEIGHT; idy+=SIZE)
-		{
-			for (int idx = 0; idx < WIDTH; idx+=SIZE)
-			{
-				if ((idx == 0 || idx >= (WIDTH - SIZE) / SIZE * SIZE) ||
-				    (idy == 0 || idy >= (HEIGHT - SIZE) / SIZE * SIZE))
-					printSquare(window, idx, idy, SIZE, "border");
-				else if (idx == x && idy == y)
-					printSquare(window, idx, idy, SIZE, "head");
-				else if (idx == foodX && idy == foodY)
-					printSquare(window, idx, idy, SIZE, "food");
-				else
-				{
-					bool isTail = false;
-					for (int idt = 0; idt < countTail; idt++)
-						if (prevX[idt] == idx && prevY[idt] == idy)
-						{
-							printSquare(window, idx, idy, SIZE, "tail");
-							isTail = true;
-						}
-					if (isTail == false)
-						printSquare(window, idx, idy, SIZE, "empty");
-				}
-			}
-		}
+    while (window.isOpen())
+    {
+        window.renderWindow.clear(sf::Color(136, 48, 78));
+        sf::ConvexShape handleButton1 = printButton(window, WWIDTH/2 - 50, WHEIGHT/2-45, 100, 30, "New Game");
+        sf::ConvexShape handleButton2 = printButton(window, WWIDTH/2 - 50, WHEIGHT/2+5, 100, 30, "Quit");
+        printBorder(window, WWIDTH, WHEIGHT, SIZE);
+        if (sf::Mouse::isButtonPressed(sf::Mouse::Left))
+        {
+            if (handleButton1.getGlobalBounds().contains(sf::Mouse::getPosition(window.renderWindow).x, sf::Mouse::getPosition(window.renderWindow).y))
+                break;
+            else if (handleButton2.getGlobalBounds().contains(sf::Mouse::getPosition(window.renderWindow).x, sf::Mouse::getPosition(window.renderWindow).y))
+            {
+                window.renderWindow.close();
+                break;
+            }
+
+        }
+        window.render();
+    }
 }
 
-void controller()
+void bestScoreUpdate()
+{
+    bestScore = score > bestScore ? score : bestScore;
+    FILE *data = fopen("data.dat", "w");
+    fprintf(data, "%d", bestScore);
+    fclose(data);
+}
+
+void render(Window &window)
+{
+    window.renderWindow.clear(sf::Color(136, 48, 78));
+	for (int idt = 0; idt < countTail; idt++)
+        printSquare(window, prevX[idt], prevY[idt], SIZE, "tail");
+    printSquare(window, foodX, foodY, SIZE, "food");
+    printSquare(window, x, y, SIZE, "head");
+    printBorder(window, WIDTH, HEIGHT, SIZE);
+    printString(window, WIDTH + SIZE / 2, SIZE / 2, 2*SIZE - SIZE / 2, bScore); // Score
+    printString(window, WIDTH + SIZE / 2, 2*SIZE, 2*SIZE - SIZE / 2, bBestScore);
+    printString(window, WIDTH + SIZE / 2, 4*SIZE, 2*SIZE - SIZE / 2, "R - restart");
+    printString(window, WIDTH + SIZE / 2, 5*SIZE + SIZE, SIZE, "B.space - reset");
+}
+
+void controller(Window &window)
 {
 
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up) || sf::Keyboard::isKeyPressed(sf::Keyboard::W))
@@ -122,7 +159,24 @@ void controller()
             state = RIGHT;
     }
     else if (sf::Keyboard::isKeyPressed(sf::Keyboard::R))
+    {
+        bestScoreUpdate();
         init();
+    }
+    else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Backspace))
+    {
+        FILE *data = fopen("data.dat", "w");
+		fprintf(data, "%d", 0);
+		fclose(data);
+		bestScore = 0;
+		sprintf(bBestScore, "Best: %d", bestScore);
+    }
+    else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
+    {
+        menu(window);
+        bestScoreUpdate();
+        init();
+    }
 }
 
 void logic()
@@ -131,6 +185,8 @@ void logic()
 	if (x == foodX && y == foodY)
 	{
 		countTail++;
+		score+=10;
+		snprintf(bScore, sizeof(bScore), "Score: %d", score);
 		foodX = SIZE + rand()%((WIDTH-2*SIZE)/SIZE) * SIZE;
 		foodY = SIZE + rand()%((HEIGHT-2*SIZE)/SIZE) * SIZE;
 	}
@@ -185,5 +241,8 @@ void logic()
 			break;
 		}
 	if (GameOver)
+    {
 		state = STOP;
+		bestScoreUpdate();
+    }
 }
